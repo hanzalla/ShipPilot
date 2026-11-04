@@ -6,10 +6,10 @@ services:
     container_name: shippilot_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: shippilot
-      MYSQL_USER: shippilot_user
-      MYSQL_PASSWORD: shippilot_pass
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - '3307:3306'
     volumes:
