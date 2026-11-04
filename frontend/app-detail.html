@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — App Detail</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <style>
+    /* Tabs */
+    .tab-nav {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: var(--space-6);
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: var(--space-3) var(--space-5);
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color var(--transition), border-color var(--transition);
+    }
+    .tab-btn:hover { color: var(--color-text); }
+    .tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* App header */
+    .app-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+      flex-wrap: wrap;
+    }
+    .app-header__left { flex: 1; }
+    .app-header__title { font-size: 1.4rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+    .app-header__repo { font-family: var(--font-mono); font-size: 0.82rem; color: var(--color-text-muted); }
+
+    /* Overview cards */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .stat-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-5);
+    }
+    .stat-card__label { font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-2); }
+    .stat-card__value { font-size: 1.5rem; font-weight: 700; color: var(--color-text); }
+
+    /* Environments */
+    .env-list { display: flex; flex-direction: column; gap: var(--space-3); }
+    .env-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .env-card__name { font-weight: 600; font-size: 0.9rem; color: var(--color-text); }
+    .env-card__target { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-text-muted); margin-top: 2px; }
+    .env-name-prod  { color: #f85149; }
+    .env-name-staging { color: var(--color-primary); }
+    .env-name-dev   { color: #3fb950; }
+
+    /* Deployments table */
+    .deploy-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .deploy-table th {
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .deploy-table td {
+      padding: var(--space-3) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      vertical-align: middle;
+    }
+    .deploy-table tr:last-child td { border-bottom: none; }
+    .deploy-table tr:hover td { background: var(--color-bg-elevated); }
+    .sha { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-text-muted); }
+
+    /* Settings */
+    .settings-section {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-6);
+      margin-bottom: var(--space-5);
+    }
+    .settings-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+    .danger-zone { border-color: #f85149; }
+    .danger-zone h3 { color: #f85149; }
+    .danger-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+    .danger-row p { font-size: 0.875rem; color: var(--color-text-muted); margin: 0; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .modal__header { display: flex; align-items: center; justify-content: space-between; }
+    .modal__header h3 { font-size: 1rem; font-weight: 600; }
+    .modal__footer { display: flex; gap: var(--space-3); justify-content: flex-end; }
+    .close-btn {
+      background: transparent; border: none;
+      color: var(--color-text-muted); font-size: 1.3rem;
+      cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .close-btn:hover { color: var(--color-text); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <div class="sidebar__logo-icon">SP</div>
+      <span class="sidebar__logo-text">ShipPilot</span>
+    </a>
+    <nav class="sidebar__nav">
+      <a class="nav-item" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item active" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex; align-items:center; gap: var(--space-3)">
+        <a href="applications.html" style="color: var(--color-text-muted); font-size:0.85rem; text-decoration:none;">← Applications</a>
+        <span style="color: var(--color-border)">/</span>
+        <span class="topbar__title" id="topbar-app-name">Loading…</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div id="alert-area"></div>
+
+      <!-- App header -->
+      <div class="app-header" id="app-header" style="display:none">
+        <div class="app-header__left">
+          <div class="app-header__title" id="app-title"></div>
+          <div class="app-header__repo" id="app-repo"></div>
+          <div style="margin-top: var(--space-2)" id="app-desc-text"></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="environments">Environments</button>
+        <button class="tab-btn" data-tab="deployments">Deployments</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
+      </div>
+
+      <!-- Overview -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="overview-grid" id="overview-stats">
+          <div class="stat-card"><div class="stat-card__label">Environments</div><div class="stat-card__value" id="stat-envs">—</div></div>
+          <div class="stat-card"><div class="stat-card__label">Total Deployments</div><div class="stat-card__value" id="stat-deploys">—</div></div>
+          <div class="stat-card"><div class="stat-card__label">Last Deployment</div><div class="stat-card__value" style="font-size:1rem" id="stat-last">—</div></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Repository</h3>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-4)">
+            <div>
+              <div class="form-label" style="font-size:0.75rem; margin-bottom:4px">Full name</div>
+              <div class="sha" id="ov-repo-name">—</div>
+            </div>
+            <div>
+              <div class="form-label" style="font-size:0.75rem; margin-bottom:4px">Default branch</div>
+              <div class="sha" id="ov-branch">—</div>
+            </div>
+            <div>
+              <div class="form-label" style="font-size:0.75rem; margin-bottom:4px">Clone URL</div>
+              <div class="sha" id="ov-clone-url" style="word-break:break-all">—</div>
+            </div>
+            <div>
+              <div class="form-label" style="font-size:0.75rem; margin-bottom:4px">Registered</div>
+              <div class="sha" id="ov-created-at">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Environments -->
+      <div class="tab-panel" id="tab-environments">
+        <div style="display:flex; justify-content:flex-end; margin-bottom: var(--space-4)">
+          <button class="btn btn-primary btn-sm" id="add-env-btn">+ Add Environment</button>
+        </div>
+        <div id="env-list-container">
+          <div class="empty-state"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Deployments -->
+      <div class="tab-panel" id="tab-deployments">
+        <div id="deployments-container">
+          <div class="empty-state"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="settings-section">
+          <h3>Application Details</h3>
+          <div id="settings-alert"></div>
+          <div style="display:flex; flex-direction:column; gap: var(--space-4); max-width:480px">
+            <div class="form-group">
+              <label class="form-label" for="settings-name">Application name</label>
+              <input class="form-input" type="text" id="settings-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="settings-desc">Description</label>
+              <input class="form-input" type="text" id="settings-desc" placeholder="Optional" />
+            </div>
+            <div>
+              <button class="btn btn-primary btn-sm" id="save-settings-btn">Save changes</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section danger-zone">
+          <h3>Danger Zone</h3>
+          <div class="danger-row">
+            <p>Permanently delete this application and all its deployment history. This cannot be undone.</p>
+            <button class="btn btn-sm" style="background:#f85149; color:#fff; border-color:#f85149" id="delete-app-btn">Delete Application</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+</div>
+
+<!-- Add Environment Modal -->
+<div class="modal-overlay" id="env-modal">
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Add Environment</h3>
+      <button class="close-btn" id="close-env-modal">✕</button>
+    </div>
+    <div id="env-modal-alert"></div>
+    <div class="form-group">
+      <label class="form-label" for="env-name-select">Environment</label>
+      <select class="form-input" id="env-name-select">
+        <option value="development">Development</option>
+        <option value="staging">Staging</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="env-target">Deployment target <span class="text-faint">(optional)</span></label>
+      <input class="form-input" type="text" id="env-target" placeholder="e.g. Azure App Service name or URL" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="env-health">Health check URL <span class="text-faint">(optional)</span></label>
+      <input class="form-input" type="url" id="env-health" placeholder="https://…/health" />
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn-secondary" id="cancel-env-modal">Cancel</button>
+      <button class="btn btn-primary" id="submit-env-btn">Add Environment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 style="color:#f85149">Delete Application</h3>
+      <button class="close-btn" id="close-delete-modal">✕</button>
+    </div>
+    <p style="font-size:0.875rem; color: var(--color-text-muted)">
+      This will permanently delete <strong id="delete-app-name" style="color: var(--color-text)"></strong> and all its deployment history. Type the application name to confirm.
+    </p>
+    <div class="form-group">
+      <input class="form-input" type="text" id="delete-confirm-input" placeholder="Type app name to confirm" />
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn-secondary" id="cancel-delete-modal">Cancel</button>
+      <button class="btn btn-sm" style="background:#f85149; color:#fff; border-color:#f85149" id="confirm-delete-btn" disabled>Delete</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/pages/app-detail.js"></script>
+</body>
+</html>

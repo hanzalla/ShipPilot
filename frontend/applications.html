@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — Applications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <style>
+    .app-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-5);
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: border-color var(--transition);
+      text-decoration: none;
+    }
+    .app-card:hover { border-color: var(--color-primary); text-decoration: none; }
+    .app-card__name { font-weight: 600; color: var(--color-text); font-size: 0.95rem; }
+    .app-card__repo { font-size: 0.8rem; color: var(--color-text-muted); font-family: var(--font-mono); margin-top: 2px; }
+    .app-card__meta { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); flex-wrap: wrap; }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }
+
+    /* Drawer */
+    .drawer-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+    }
+    .drawer-overlay.open { display: block; }
+    .drawer {
+      position: fixed; top: 0; right: -480px;
+      width: 480px; height: 100vh;
+      background: var(--color-bg-elevated);
+      border-left: 1px solid var(--color-border);
+      z-index: 201;
+      display: flex; flex-direction: column;
+      transition: right 0.25s ease;
+    }
+    .drawer.open { right: 0; }
+    .drawer__header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-5) var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .drawer__body { flex: 1; padding: var(--space-6); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-5); }
+    .drawer__footer {
+      padding: var(--space-5) var(--space-6);
+      border-top: 1px solid var(--color-border);
+      display: flex; gap: var(--space-3); justify-content: flex-end;
+    }
+    .close-btn {
+      background: transparent; border: none;
+      color: var(--color-text-muted); font-size: 1.3rem;
+      cursor: pointer; padding: 4px;
+      line-height: 1;
+    }
+    .close-btn:hover { color: var(--color-text); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <div class="sidebar__logo-icon">SP</div>
+      <span class="sidebar__logo-text">ShipPilot</span>
+    </a>
+    <nav class="sidebar__nav">
+      <a class="nav-item" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item active" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar__title">Applications</span>
+      <div class="topbar__actions">
+        <button class="btn btn-primary btn-sm" id="new-app-btn">+ New Application</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header__text">
+          <h1>Applications</h1>
+          <p>Manage your registered applications and their deployment environments.</p>
+        </div>
+      </div>
+
+      <div id="alert-area"></div>
+
+      <!-- Apps grid -->
+      <div class="apps-grid" id="apps-grid">
+        <div style="grid-column:1/-1">
+          <div class="empty-state">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+
+<!-- New Application Drawer -->
+<div class="drawer" id="new-app-drawer">
+  <div class="drawer__header">
+    <h3>New Application</h3>
+    <button class="close-btn" id="close-drawer">✕</button>
+  </div>
+  <div class="drawer__body">
+    <div id="drawer-alert"></div>
+
+    <div class="form-group">
+      <label class="form-label" for="app-name">Application name</label>
+      <input class="form-input" type="text" id="app-name" placeholder="e.g. My API" />
+      <span class="form-hint">A short, memorable name for this application.</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="app-desc">Description <span class="text-faint">(optional)</span></label>
+      <input class="form-input" type="text" id="app-desc" placeholder="What does this application do?" />
+    </div>
+
+    <hr class="divider" />
+    <div id="repo-section">
+      <!-- Filled dynamically by applications.js based on GitHub connection status -->
+    </div>
+  </div>
+
+  <div class="drawer__footer">
+    <button class="btn btn-secondary" id="cancel-drawer">Cancel</button>
+    <button class="btn btn-primary" id="submit-app">Create Application</button>
+  </div>
+</div>
+
+<script type="module" src="js/pages/applications.js"></script>
+</body>
+</html>
