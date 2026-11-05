@@ -1,14 +1,23 @@
+import { randomUUID } from 'crypto';
 import db from '../config/db.js';
+import { encrypt, decrypt } from '../utils/crypto.js';
 
-const GH_API = 'https://api.github.com';
+const GH_API    = 'https://api.github.com';
+const SAFE_PARAM = /^[a-zA-Z0-9._-]+$/; // owner / repo names may only use these chars
 
-// ── OAuth helpers ─────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────
 async function getToken(userId) {
   const [rows] = await db.query(
     'SELECT access_token FROM github_connections WHERE user_id = ? LIMIT 1',
     [userId]
   );
-  return rows[0]?.access_token || null;
+  if (!rows[0]) return null;
+  try {
+    return decrypt(rows[0].access_token);
+  } catch {
+    // token is from before encryption was added — force reconnect
+    return null;
+  }
 }
 
 async function ghFetch(path, token, opts = {}) {
@@ -23,7 +32,7 @@ async function ghFetch(path, token, opts = {}) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const err = new Error(body.message || `GitHub API error ${res.status}`);
+    const err  = new Error(body.message || `GitHub API error ${res.status}`);
     err.status = res.status;
     throw err;
   }
@@ -34,9 +43,8 @@ async function ghFetch(path, token, opts = {}) {
 export async function status(req, res, next) {
   try {
     const [rows] = await db.query(
-      `SELECT gc.github_username, gc.github_avatar_url, gc.created_at
-       FROM github_connections gc
-       WHERE gc.user_id = ? LIMIT 1`,
+      `SELECT github_username, github_avatar_url, created_at
+       FROM github_connections WHERE user_id = ? LIMIT 1`,
       [req.session.userId]
     );
     if (rows.length === 0) return res.json({ connected: false });
@@ -49,11 +57,16 @@ export async function status(req, res, next) {
 // ── Connect: redirect to GitHub OAuth ─────────────────
 export function connect(req, res) {
   const { GITHUB_CLIENT_ID, GITHUB_CALLBACK_URL } = process.env;
+
+  // Random nonce stored in session — verified on callback (CSRF protection)
+  const state = randomUUID();
+  req.session.oauthState = state;
+
   const params = new URLSearchParams({
     client_id:    GITHUB_CLIENT_ID,
     redirect_uri: GITHUB_CALLBACK_URL,
     scope:        'repo read:user',
-    state:        String(req.session.userId),
+    state,
   });
   res.redirect(`https://github.com/login/oauth/authorize?${params}`);
 }
@@ -67,8 +80,13 @@ export async function callback(req, res, next) {
     return res.redirect(`${FRONTEND_URL}/github.html?error=no_code`);
   }
 
+  // Verify CSRF state nonce
+  if (!state || !req.session.oauthState || state !== req.session.oauthState) {
+    return res.redirect(`${FRONTEND_URL}/github.html?error=invalid_state`);
+  }
+  delete req.session.oauthState; // consume — cannot be replayed
+
   try {
-    // Exchange code for access token
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -85,25 +103,26 @@ export async function callback(req, res, next) {
       return res.redirect(`${FRONTEND_URL}/github.html?error=token_exchange`);
     }
 
-    // Fetch GitHub user info
     const ghUser = await ghFetch('/user', tokenData.access_token);
 
-    // Upsert connection (one per user)
+    // Encrypt token before storing
+    const encryptedToken = encrypt(tokenData.access_token);
+
     await db.query(
       `INSERT INTO github_connections (user_id, github_user_id, github_username, github_avatar_url, access_token, scope)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
-         github_user_id = VALUES(github_user_id),
-         github_username = VALUES(github_username),
+         github_user_id    = VALUES(github_user_id),
+         github_username   = VALUES(github_username),
          github_avatar_url = VALUES(github_avatar_url),
-         access_token = VALUES(access_token),
-         scope = VALUES(scope)`,
+         access_token      = VALUES(access_token),
+         scope             = VALUES(scope)`,
       [
         req.session.userId,
         String(ghUser.id),
         ghUser.login,
         ghUser.avatar_url || null,
-        tokenData.access_token,
+        encryptedToken,
         tokenData.scope || null,
       ]
     );
@@ -121,7 +140,7 @@ export async function repos(req, res, next) {
     const token = await getToken(req.session.userId);
     if (!token) return res.status(401).json({ error: 'GitHub not connected' });
 
-    const page    = Number(req.query.page) || 1;
+    const page    = Math.max(1, Number(req.query.page) || 1);
     const perPage = 100;
 
     const data = await ghFetch(
@@ -146,10 +165,16 @@ export async function repos(req, res, next) {
 // ── Branches ──────────────────────────────────────────
 export async function branches(req, res, next) {
   try {
+    const { owner, repo } = req.params;
+
+    // Reject path-traversal or unexpected characters
+    if (!SAFE_PARAM.test(owner) || !SAFE_PARAM.test(repo)) {
+      return res.status(400).json({ error: 'Invalid repository parameters' });
+    }
+
     const token = await getToken(req.session.userId);
     if (!token) return res.status(401).json({ error: 'GitHub not connected' });
 
-    const { owner, repo } = req.params;
     const data = await ghFetch(`/repos/${owner}/${repo}/branches?per_page=100`, token);
     res.json(data.map(b => ({ name: b.name })));
   } catch (err) {

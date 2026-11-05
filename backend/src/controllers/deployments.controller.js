@@ -1,5 +1,7 @@
 import db from '../config/db.js';
 
+const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
+
 export async function list(req, res, next) {
   try {
     const [rows] = await db.query(
@@ -62,6 +64,15 @@ export async function create(req, res, next) {
 
     if (!environment_id || !branch || !commit_sha) {
       return res.status(400).json({ error: 'environment_id, branch, and commit_sha are required' });
+    }
+    if (!COMMIT_SHA_REGEX.test(commit_sha)) {
+      return res.status(400).json({ error: 'Invalid commit SHA format' });
+    }
+    if (branch.length > 255) {
+      return res.status(400).json({ error: 'Branch name too long' });
+    }
+    if (commit_message && commit_message.length > 500) {
+      return res.status(400).json({ error: 'Commit message too long' });
     }
 
     const [app] = await db.query(

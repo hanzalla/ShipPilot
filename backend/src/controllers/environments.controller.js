@@ -1,5 +1,11 @@
 import db from '../config/db.js';
 
+const ALLOWED_NAMES = ['development', 'staging', 'production'];
+
+function isValidUrl(value) {
+  try { new URL(value); return true; } catch { return false; }
+}
+
 export async function list(req, res, next) {
   try {
     const [rows] = await db.query(
@@ -23,10 +29,14 @@ export async function create(req, res, next) {
     if (!name) {
       return res.status(400).json({ error: 'Environment name is required' });
     }
-
-    const allowed = ['development', 'staging', 'production'];
-    if (!allowed.includes(name)) {
+    if (!ALLOWED_NAMES.includes(name)) {
       return res.status(400).json({ error: 'Name must be development, staging, or production' });
+    }
+    if (deployment_target && deployment_target.length > 255) {
+      return res.status(400).json({ error: 'Deployment target must be 255 characters or fewer' });
+    }
+    if (health_check_url && !isValidUrl(health_check_url)) {
+      return res.status(400).json({ error: 'Invalid health check URL' });
     }
 
     const [app] = await db.query(
@@ -51,6 +61,13 @@ export async function create(req, res, next) {
 export async function update(req, res, next) {
   try {
     const { deployment_target, health_check_url } = req.body;
+
+    if (deployment_target && deployment_target.length > 255) {
+      return res.status(400).json({ error: 'Deployment target must be 255 characters or fewer' });
+    }
+    if (health_check_url && !isValidUrl(health_check_url)) {
+      return res.status(400).json({ error: 'Invalid health check URL' });
+    }
 
     const [result] = await db.query(
       `UPDATE environments e

@@ -1,6 +1,8 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 import authRoutes       from './routes/auth.js';
 import appRoutes        from './routes/applications.js';
@@ -10,25 +12,49 @@ import repoRoutes       from './routes/repositories.js';
 import githubRoutes     from './routes/github.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) throw new Error('SESSION_SECRET environment variable is required');
+
+const isProd = process.env.NODE_ENV === 'production';
+
 const app = express();
 
+if (isProd) app.set('trust proxy', 1);
+
+// Security headers
+app.use(helmet());
+
+// CORS — only allow our frontend origin
 app.use(cors({
-  origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
+  origin: isProd
+    ? process.env.FRONTEND_URL
+    : ['http://localhost:5500', 'http://127.0.0.1:5500'],
   credentials: true,
 }));
-app.use(express.json());
+
+app.use(express.json({ limit: '50kb' })); // prevent large payload attacks
 app.use(express.static('public'));
 
+// Session
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,
+    secure: isProd,
     sameSite: 'lax',
     maxAge: 1000 * 60 * 60 * 24,
   },
+}));
+
+// Global rate limit — 200 requests per 15 min per IP
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 200,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
 }));
 
 app.get('/health', (req, res) => {
