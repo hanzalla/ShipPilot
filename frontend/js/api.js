@@ -50,11 +50,27 @@ export const api = {
   updateEnv: (appId, envId, body) =>
     request('PATCH', `/api/applications/${appId}/environments/${envId}`, body),
 
-  // Deployments
+  // Deployments (per-app)
   getDeployments: (appId) =>
     request('GET', `/api/applications/${appId}/deployments`),
   getDeployment: (appId, id) =>
     request('GET', `/api/applications/${appId}/deployments/${id}`),
   createDeployment: (appId, body) =>
     request('POST', `/api/applications/${appId}/deployments`, body),
+
+  // Deployments (global — across all apps)
+  getAllDeployments: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== ''))
+    ).toString();
+    return request('GET', `/api/deployments${qs ? `?${qs}` : ''}`);
+  },
+
+  // Audit log
+  getAuditLogs: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== ''))
+    ).toString();
+    return request('GET', `/api/audit${qs ? `?${qs}` : ''}`);
+  },
 };

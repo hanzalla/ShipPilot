@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — Deployments</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <style>
+    /* ── Summary tiles ── */
+    .deploy-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .summary-tile {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-5);
+    }
+    .summary-tile__label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2);
+    }
+    .summary-tile__value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1;
+    }
+
+    /* ── Filters ── */
+    .filter-bar {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar select,
+    .filter-bar input {
+      height: 36px;
+      padding: 0 var(--space-3);
+      font-size: 0.85rem;
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-bar select:focus,
+    .filter-bar input:focus { border-color: var(--color-primary); }
+    .filter-sep { flex: 1; }
+
+    /* ── Table ── */
+    .deploy-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .deploy-table th {
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+      color: var(--color-text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .deploy-table td {
+      padding: var(--space-3) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      vertical-align: middle;
+    }
+    .deploy-table tr:last-child td { border-bottom: none; }
+    .deploy-table tr:hover td { background: var(--color-bg-elevated); }
+    .sha { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-text-muted); }
+    .app-link { color: var(--color-primary); text-decoration: none; font-weight: 500; }
+    .app-link:hover { text-decoration: underline; }
+    .commit-msg { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-muted); font-size: 0.82rem; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) 0;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+    .pagination__btns { display: flex; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <img class="sidebar__logo-img" src="assets/logo.png" alt="ShipPilot" />
+    </a>
+    <nav class="sidebar__nav">
+      <a class="nav-item" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item active" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar__title">Deployments</span>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header__text">
+          <h1>Deployments</h1>
+          <p>All deployments across your applications.</p>
+        </div>
+      </div>
+
+      <div id="alert-area"></div>
+
+      <!-- Summary tiles -->
+      <div class="deploy-summary">
+        <div class="summary-tile">
+          <div class="summary-tile__label">Total</div>
+          <div class="summary-tile__value" id="count-total">—</div>
+        </div>
+        <div class="summary-tile">
+          <div class="summary-tile__label">Succeeded</div>
+          <div class="summary-tile__value" id="count-succeeded" style="color: var(--color-success)">—</div>
+        </div>
+        <div class="summary-tile">
+          <div class="summary-tile__label">Failed</div>
+          <div class="summary-tile__value" id="count-failed" style="color: var(--color-danger)">—</div>
+        </div>
+        <div class="summary-tile">
+          <div class="summary-tile__label">In Progress</div>
+          <div class="summary-tile__value" id="count-progress" style="color: var(--color-warning)">—</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <select id="filter-app">
+          <option value="">All Applications</option>
+        </select>
+        <select id="filter-env">
+          <option value="">All Environments</option>
+          <option value="development">Development</option>
+          <option value="staging">Staging</option>
+          <option value="production">Production</option>
+        </select>
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="queued">Queued</option>
+          <option value="running">Running</option>
+          <option value="succeeded">Succeeded</option>
+          <option value="failed">Failed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <span class="filter-sep"></span>
+        <button class="btn btn-secondary btn-sm" id="reset-filters">Reset</button>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="overflow: hidden; padding: 0">
+        <div class="table-wrap">
+          <table class="deploy-table">
+            <thead>
+              <tr>
+                <th>Application</th>
+                <th>Environment</th>
+                <th>Branch</th>
+                <th>Commit</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Triggered by</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="deployments-body">
+              <tr>
+                <td colspan="8">
+                  <div class="empty-state"><div class="spinner"></div></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="padding: var(--space-4) var(--space-5); display: none">
+          <span id="page-info"></span>
+          <div class="pagination__btns">
+            <button class="btn btn-secondary btn-sm" id="prev-btn" disabled>← Prev</button>
+            <button class="btn btn-secondary btn-sm" id="next-btn" disabled>Next →</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+</div>
+
+<script type="module" src="js/pages/deployments.js"></script>
+</body>
+</html>

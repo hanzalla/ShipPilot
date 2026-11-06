@@ -8,7 +8,7 @@ on:
       - 'demo-app/**'
 
 jobs:
-  build_docker_container:
+  test_demo:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Dependencies
         run: npm ci
@@ -29,5 +29,27 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Docker image
+  test_docker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo-app
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Test inside Docker
+        run: docker build --target test -t demo-app .
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test_demo, test_docker]
+    defaults:
+      run:
+        working-directory: demo-app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Production Image docker
         run: docker build --target prod -t demo-app .
