@@ -1,0 +1,55 @@
+name: Demo App CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'demo-app/**'
+
+jobs:
+  test_demo:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  test_docker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo-app
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Test inside Docker
+        run: docker build --target test -t demo-app .
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test_demo, test_docker]
+    defaults:
+      run:
+        working-directory: demo-app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Production Image docker
+        run: docker build --target prod -t demo-app .

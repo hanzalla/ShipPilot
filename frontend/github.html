@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — GitHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <style>
+    .gh-card {
+      max-width: 560px;
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+    }
+    .gh-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--space-4);
+    }
+    .gh-card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: var(--space-2); }
+    .gh-card p  { font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: var(--space-5); line-height: 1.6; }
+    .permissions-list {
+      display: flex; flex-direction: column; gap: var(--space-2);
+      margin-bottom: var(--space-6);
+    }
+    .permission-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      font-size: 0.875rem; color: var(--color-text-muted);
+    }
+    .permission-item::before { content: '✓'; color: #3fb950; font-weight: 700; }
+
+    /* Connected state */
+    .gh-connected {
+      display: flex; align-items: center; gap: var(--space-4);
+      padding: var(--space-5);
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-5);
+    }
+    .gh-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--color-bg-elevated);
+      border: 2px solid var(--color-border);
+    }
+    .gh-connected__name { font-weight: 600; font-size: 0.95rem; }
+    .gh-connected__sub  { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <img class="sidebar__logo-img" src="assets/logo.png" alt="ShipPilot" />
+    </a>
+    <nav class="sidebar__nav">
+      <a class="nav-item" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item active" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar__title">GitHub Integration</span>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header__text">
+          <h1>GitHub</h1>
+          <p>Connect your GitHub account to import repositories and trigger deployments.</p>
+        </div>
+      </div>
+
+      <div id="alert-area"></div>
+      <div id="gh-content">
+        <div class="empty-state"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="js/pages/github.js"></script>
+</body>
+</html>

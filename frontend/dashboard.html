@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <img class="sidebar__logo-img" src="assets/logo.png" alt="ShipPilot" />
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="nav-item active" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar__title">Dashboard</span>
+      <div class="topbar__actions">
+        <a class="btn btn-primary btn-sm" href="applications.html#new">
+          + New Application
+        </a>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header__text">
+          <h1 id="greeting">Good morning</h1>
+          <p>Here's what's happening with your deployments.</p>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-tile">
+          <div class="stat-tile__label">Applications</div>
+          <div class="stat-tile__value" id="stat-apps">—</div>
+          <div class="stat-tile__sub">registered</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile__label">Deployments today</div>
+          <div class="stat-tile__value" id="stat-today">—</div>
+          <div class="stat-tile__sub">this calendar day</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile__label">Successful</div>
+          <div class="stat-tile__value" id="stat-success" style="color: var(--color-success)">—</div>
+          <div class="stat-tile__sub">this week</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile__label">Failed</div>
+          <div class="stat-tile__value" id="stat-failed" style="color: var(--color-danger)">—</div>
+          <div class="stat-tile__sub">this week</div>
+        </div>
+      </div>
+
+      <!-- Recent deployments -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Deployments</h3>
+          <a href="deployments.html" class="text-sm" style="color: var(--color-primary)">View all</a>
+        </div>
+
+        <div class="table-wrap">
+          <table id="deployments-table">
+            <thead>
+              <tr>
+                <th>Application</th>
+                <th>Environment</th>
+                <th>Commit</th>
+                <th>Triggered by</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="deployments-body">
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <div class="spinner"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+
+</div><!-- /app-shell -->
+
+<script type="module" src="js/pages/dashboard.js"></script>
+</body>
+</html>

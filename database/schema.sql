@@ -11,14 +11,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS github_connections (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id         INT UNSIGNED NOT NULL,
-    github_user_id  VARCHAR(100) NOT NULL,
-    github_login    VARCHAR(255) NOT NULL,
-    -- token stored encrypted; never plaintext
-    encrypted_token TEXT,
-    token_hint      VARCHAR(10),
-    connected_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id           INT UNSIGNED NOT NULL UNIQUE,
+    github_user_id    VARCHAR(100) NOT NULL,
+    github_username   VARCHAR(255) NOT NULL,
+    github_avatar_url VARCHAR(1024),
+    access_token      TEXT NOT NULL,
+    scope             VARCHAR(255),
+    created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

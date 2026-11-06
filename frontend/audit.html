@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipPilot — Audit Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <style>
+    /* ── Filters ── */
+    .filter-bar {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar select {
+      height: 36px;
+      padding: 0 var(--space-3);
+      font-size: 0.85rem;
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-bar select:focus { border-color: var(--color-primary); }
+    .filter-sep { flex: 1; }
+
+    /* ── Table ── */
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .audit-table th {
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+      color: var(--color-text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .audit-table td {
+      padding: var(--space-3) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      vertical-align: middle;
+    }
+    .audit-table tr:last-child td { border-bottom: none; }
+    .audit-table tr:hover td { background: var(--color-bg-elevated); }
+
+    /* Action badges */
+    .action-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    .action-create  { background: rgba(63,185,80,.15);  color: #3fb950; }
+    .action-update  { background: rgba(230,162,60,.15); color: #e6a23c; }
+    .action-delete  { background: rgba(248,81,73,.15);  color: #f85149; }
+    .action-auth    { background: rgba(88,166,255,.15); color: #58a6ff; }
+    .action-github  { background: rgba(139,148,158,.15);color: #8b949e; }
+    .action-deploy  { background: rgba(188,140,255,.15);color: #bc8cff; }
+    .action-default { background: rgba(139,148,158,.12);color: var(--color-text-muted); }
+
+    .meta-cell {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ip-cell { font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-text-muted); }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+    .pagination__btns { display: flex; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="dashboard.html">
+      <img class="sidebar__logo-img" src="assets/logo.png" alt="ShipPilot" />
+    </a>
+    <nav class="sidebar__nav">
+      <a class="nav-item" href="dashboard.html">
+        <span class="nav-item__icon">⬡</span> Dashboard
+      </a>
+      <a class="nav-item" href="applications.html">
+        <span class="nav-item__icon">◫</span> Applications
+      </a>
+      <a class="nav-item" href="deployments.html">
+        <span class="nav-item__icon">↑</span> Deployments
+      </a>
+      <a class="nav-item active" href="audit.html">
+        <span class="nav-item__icon">≡</span> Audit Log
+      </a>
+      <span class="sidebar__section-label">Integrations</span>
+      <a class="nav-item" href="github.html">
+        <span class="nav-item__icon">◎</span> GitHub
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar" id="user-avatar">HM</div>
+        <span class="sidebar__username" id="user-name">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle" title="Toggle theme">◑</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar__title">Audit Log</span>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header__text">
+          <h1>Audit Log</h1>
+          <p>A tamper-evident record of all actions performed in your account.</p>
+        </div>
+      </div>
+
+      <div id="alert-area"></div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <select id="filter-action">
+          <option value="">All Actions</option>
+          <option value="auth">Auth (login / register)</option>
+          <option value="app">Applications</option>
+          <option value="deployment">Deployments</option>
+          <option value="github">GitHub</option>
+        </select>
+        <select id="filter-resource">
+          <option value="">All Resources</option>
+          <option value="user">User</option>
+          <option value="application">Application</option>
+          <option value="deployment">Deployment</option>
+        </select>
+        <span class="filter-sep"></span>
+        <button class="btn btn-secondary btn-sm" id="reset-filters">Reset</button>
+        <button class="btn btn-secondary btn-sm" id="refresh-btn">↻ Refresh</button>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="overflow: hidden; padding: 0">
+        <div class="table-wrap">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>Detail</th>
+                <th>IP Address</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state"><div class="spinner"></div></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display: none">
+          <span id="page-info"></span>
+          <div class="pagination__btns">
+            <button class="btn btn-secondary btn-sm" id="prev-btn" disabled>← Prev</button>
+            <button class="btn btn-secondary btn-sm" id="next-btn" disabled>Next →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/pages/audit.js"></script>
+</body>
+</html>
