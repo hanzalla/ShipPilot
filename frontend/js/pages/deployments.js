@@ -1,6 +1,6 @@
 import { api }         from '../api.js';
 import { requireAuth, initUser } from '../auth.js';
-import { showAlert, formatRelative, statusBadge } from '../utils.js';
+import { showAlert, timeAgo, statusBadge } from '../utils.js';
 
 requireAuth();
 initUser();
@@ -62,7 +62,7 @@ function renderRows(rows) {
       <td><span class="commit-msg" title="${escHtml(d.commit_message || '')}">${escHtml(d.commit_message || '—')}</span></td>
       <td>${statusBadge(d.status)}</td>
       <td style="font-size:0.82rem; color: var(--color-text-muted)">${escHtml(d.triggered_by_name)}</td>
-      <td style="font-size:0.82rem; color: var(--color-text-muted); white-space:nowrap">${formatRelative(d.created_at)}</td>
+      <td style="font-size:0.82rem; color: var(--color-text-muted); white-space:nowrap">${timeAgo(d.created_at)}</td>
     </tr>
   `).join('');
 }

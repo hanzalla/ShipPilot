@@ -1,6 +1,6 @@
 import { api }         from '../api.js';
 import { requireAuth, initUser } from '../auth.js';
-import { showAlert, formatRelative } from '../utils.js';
+import { showAlert, timeAgo } from '../utils.js';
 
 requireAuth();
 initUser();
@@ -67,7 +67,7 @@ function renderRows(rows) {
       </td>
       <td><span class="meta-cell" title="${escHtml(metaSummary(r.meta))}">${escHtml(metaSummary(r.meta))}</span></td>
       <td><span class="ip-cell">${escHtml(r.ip_address || '—')}</span></td>
-      <td style="font-size:0.82rem; color:var(--color-text-muted); white-space:nowrap">${formatRelative(r.occurred_at)}</td>
+      <td style="font-size:0.82rem; color:var(--color-text-muted); white-space:nowrap">${timeAgo(r.occurred_at)}</td>
     </tr>
   `).join('');
 }
