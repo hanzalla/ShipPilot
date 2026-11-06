@@ -1,9 +1,11 @@
 import { api }         from '../api.js';
-import { requireAuth, initUser } from '../auth.js';
-import { showAlert, timeAgo } from '../utils.js';
+import { requireAuth } from '../auth.js';
+import { showAlert, timeAgo, initTheme, initUserDisplay } from '../utils.js';
 
-requireAuth();
-initUser();
+initTheme();
+const user = await requireAuth();
+if (!user) throw new Error('Not authenticated');
+initUserDisplay(user);
 
 let currentPage = 1;
 let totalPages  = 1;
