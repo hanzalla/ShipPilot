@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { logAudit } from '../utils/audit.js';
 
 export async function list(req, res, next) {
   try {
@@ -51,6 +52,13 @@ export async function create(req, res, next) {
       [req.session.userId, repository_id, name, description || null]
     );
 
+    await logAudit(req, {
+      action: 'app.create',
+      resourceType: 'application',
+      resourceId: result.insertId,
+      meta: { name },
+    });
+
     res.status(201).json({ id: result.insertId, name, description, repository_id });
   } catch (err) {
     next(err);
@@ -71,6 +79,13 @@ export async function update(req, res, next) {
       return res.status(404).json({ error: 'Application not found' });
     }
 
+    await logAudit(req, {
+      action: 'app.update',
+      resourceType: 'application',
+      resourceId: Number(req.params.id),
+      meta: { name },
+    });
+
     res.json({ id: req.params.id, name, description });
   } catch (err) {
     next(err);
@@ -87,6 +102,12 @@ export async function remove(req, res, next) {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Application not found' });
     }
+
+    await logAudit(req, {
+      action: 'app.delete',
+      resourceType: 'application',
+      resourceId: Number(req.params.id),
+    });
 
     res.status(204).send();
   } catch (err) {

@@ -1,6 +1,8 @@
 import db from '../config/db.js';
+import { logAudit } from '../utils/audit.js';
 
 const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
+const ALLOWED_STATUSES = ['queued', 'running', 'succeeded', 'failed', 'cancelled'];
 
 export async function list(req, res, next) {
   try {
@@ -90,7 +92,68 @@ export async function create(req, res, next) {
       [appId, environment_id, req.session.userId, branch, commit_sha, commit_message || null, release_note || null]
     );
 
+    await logAudit(req, {
+      action: 'deployment.create',
+      resourceType: 'deployment',
+      resourceId: result.insertId,
+      meta: { branch, commit_sha, environment_id },
+    });
+
     res.status(201).json({ id: result.insertId, status: 'queued' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /:appId/deployments/:id/status
+// Called by GitHub Actions to report progress back to ShipPilot
+export async function updateStatus(req, res, next) {
+  try {
+    const { status, github_run_id } = req.body;
+    const { appId, id } = req.params;
+
+    if (!status || !ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${ALLOWED_STATUSES.join(', ')}` });
+    }
+
+    // Verify deployment belongs to this user's app
+    const [rows] = await db.query(
+      `SELECT d.id FROM deployments d
+       JOIN applications a ON a.id = d.application_id
+       WHERE d.id = ? AND d.application_id = ? AND a.user_id = ?`,
+      [id, appId, req.session.userId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Deployment not found' });
+    }
+
+    const now = new Date();
+    await db.query(
+      `UPDATE deployments
+       SET status = ?,
+           github_run_id = COALESCE(?, github_run_id),
+           started_at    = CASE WHEN ? = 'running'  AND started_at  IS NULL THEN ? ELSE started_at  END,
+           finished_at   = CASE WHEN ? IN ('succeeded','failed','cancelled') THEN ? ELSE finished_at END
+       WHERE id = ?`,
+      [status, github_run_id || null, status, now, status, now, id]
+    );
+
+    // Append timeline event
+    const eventStatusMap = { running: 'started', succeeded: 'completed', failed: 'failed', cancelled: 'failed' };
+    if (eventStatusMap[status]) {
+      await db.query(
+        'INSERT INTO deployment_events (deployment_id, stage, status, message) VALUES (?, ?, ?, ?)',
+        [id, 'pipeline', eventStatusMap[status], `Status updated to ${status}`]
+      );
+    }
+
+    await logAudit(req, {
+      action: `deployment.${status}`,
+      resourceType: 'deployment',
+      resourceId: Number(id),
+    });
+
+    res.json({ id, status });
   } catch (err) {
     next(err);
   }

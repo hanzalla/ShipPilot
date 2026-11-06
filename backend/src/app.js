@@ -4,13 +4,16 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
-import authRoutes       from './routes/auth.js';
-import appRoutes        from './routes/applications.js';
-import envRoutes        from './routes/environments.js';
-import deploymentRoutes from './routes/deployments.js';
-import repoRoutes       from './routes/repositories.js';
-import githubRoutes     from './routes/github.js';
-import { errorHandler } from './middleware/error.middleware.js';
+import authRoutes             from './routes/auth.js';
+import appRoutes              from './routes/applications.js';
+import envRoutes              from './routes/environments.js';
+import deploymentRoutes       from './routes/deployments.js';
+import globalDeploymentRoutes from './routes/deployments.global.js';
+import repoRoutes             from './routes/repositories.js';
+import githubRoutes           from './routes/github.js';
+import auditRoutes            from './routes/audit.js';
+import webhookRoutes          from './routes/webhooks.js';
+import { errorHandler }       from './middleware/error.middleware.js';
 
 const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) throw new Error('SESSION_SECRET environment variable is required');
@@ -31,6 +34,10 @@ app.use(cors({
     : ['http://localhost:5500', 'http://127.0.0.1:5500'],
   credentials: true,
 }));
+
+// Webhook MUST be registered before express.json() — it reads the raw body itself
+// for HMAC signature verification. express.json() would consume the stream first.
+app.use('/api/webhooks', webhookRoutes);
 
 app.use(express.json({ limit: '50kb' })); // prevent large payload attacks
 app.use(express.static('public'));
@@ -65,8 +72,10 @@ app.use('/api/auth',                             authRoutes);
 app.use('/api/applications',                     appRoutes);
 app.use('/api/applications/:appId/environments', envRoutes);
 app.use('/api/applications/:appId/deployments',  deploymentRoutes);
+app.use('/api/deployments',                      globalDeploymentRoutes);
 app.use('/api/repositories',                     repoRoutes);
 app.use('/api/github',                           githubRoutes);
+app.use('/api/audit',                            auditRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });

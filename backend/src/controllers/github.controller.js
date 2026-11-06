@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import db from '../config/db.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { logAudit } from '../utils/audit.js';
 
 const GH_API    = 'https://api.github.com';
 const SAFE_PARAM = /^[a-zA-Z0-9._-]+$/; // owner / repo names may only use these chars
@@ -127,6 +128,8 @@ export async function callback(req, res, next) {
       ]
     );
 
+    await logAudit(req, { action: 'github.connect', meta: { username: ghUser.login } });
+
     res.redirect(`${FRONTEND_URL}/github.html?connected=true`);
   } catch (err) {
     console.error('GitHub callback error:', err);
@@ -186,6 +189,7 @@ export async function branches(req, res, next) {
 export async function disconnect(req, res, next) {
   try {
     await db.query('DELETE FROM github_connections WHERE user_id = ?', [req.session.userId]);
+    await logAudit(req, { action: 'github.disconnect' });
     res.json({ message: 'Disconnected' });
   } catch (err) {
     next(err);

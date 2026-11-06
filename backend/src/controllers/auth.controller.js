@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import db from '../config/db.js';
+import { logAudit } from '../utils/audit.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,6 +44,8 @@ export async function register(req, res, next) {
     req.session.userId   = result.insertId;
     req.session.userName = name;
 
+    await logAudit(req, { action: 'auth.register', resourceType: 'user', resourceId: result.insertId });
+
     res.status(201).json({ id: result.insertId, name, email });
   } catch (err) {
     next(err);
@@ -72,13 +75,16 @@ export async function login(req, res, next) {
     req.session.userId   = user.id;
     req.session.userName = user.name;
 
+    await logAudit(req, { action: 'auth.login', resourceType: 'user', resourceId: user.id });
+
     res.json({ id: user.id, name: user.name, email: user.email });
   } catch (err) {
     next(err);
   }
 }
 
-export function logout(req, res) {
+export async function logout(req, res) {
+  await logAudit(req, { action: 'auth.logout' });
   req.session.destroy(() => {
     res.json({ message: 'Logged out' });
   });
