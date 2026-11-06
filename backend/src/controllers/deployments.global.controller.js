@@ -55,10 +55,10 @@ export async function listAll(req, res, next) {
     // Summary counts (always scoped to this user)
     const [[counts]] = await db.query(
       `SELECT
-         COUNT(*)                                        AS total,
-         SUM(d.status = 'succeeded')                    AS succeeded,
-         SUM(d.status = 'failed')                       AS failed,
-         SUM(d.status IN ('queued', 'running'))         AS in_progress
+         COUNT(*)                                              AS total,
+         COALESCE(SUM(d.status = 'succeeded'), 0)            AS succeeded,
+         COALESCE(SUM(d.status = 'failed'), 0)               AS failed,
+         COALESCE(SUM(d.status IN ('queued', 'running')), 0) AS in_progress
        FROM deployments d
        JOIN applications a ON a.id = d.application_id
        WHERE a.user_id = ?`,
